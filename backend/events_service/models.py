@@ -4,7 +4,7 @@ from django.db.models import JSONField
 class Event(models.Model):
     event_id = models.UUIDField(primary_key=True, editable=False)
     occurred_at = models.DateTimeField(db_index=True)
-    user_id = models.CharField(max_length=255, db_index=True)
+    user_id = models.IntegerField(db_index=True)
     event_type = models.CharField(max_length=100, db_index=True)
     properties = JSONField(default=dict, blank=True)
 

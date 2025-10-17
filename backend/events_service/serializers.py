@@ -5,7 +5,7 @@ from .models import Event
 class EventSerializer(serializers.ModelSerializer):
     event_id = serializers.UUIDField()
     occurred_at = serializers.DateTimeField()
-    user_id = serializers.CharField(max_length=255)
+    user_id = serializers.IntegerField()
     event_type = serializers.CharField(max_length=100)
     properties = serializers.JSONField()
 
