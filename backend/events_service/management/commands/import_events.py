@@ -1,6 +1,6 @@
 import csv
 import json
-from backend.events_service.models import Event
+from events_service.models import Event
 from django.core.management.base import BaseCommand
 from django.utils.dateparse import parse_datetime
 from django.db import transaction

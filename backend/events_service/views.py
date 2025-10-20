@@ -55,10 +55,7 @@ def dau_stats(request):
     if date_to: query = query.filter(occurred_at__date__lte=date_to)
 
     stats = (
-        query.annotate(day=TruncDate('occurred_at'))
-        .values('day')
-        .annotate(dau=Count('user_id', distinct=True))
-        .order_by('day')
+        query.annotate(day=TruncDate('occurred_at')).values('day').annotate(dau=Count('user_id', distinct=True)).order_by('day')
     )
     return Response(list(stats), status=status.HTTP_200_OK)
 
@@ -76,24 +73,15 @@ optional_limit_param = openapi.Parameter('limit', openapi.IN_QUERY, description=
                      operation_id="Top events for the selected period of time")
 @api_view(['GET'])
 def top_events(request):
-    date_from = request.GET.get('from')
-    date_to = request.GET.get('to')
+    date_to = request.GET.get('to', timezone.now().date())
+    date_from = request.GET.get('from', date_to - timedelta(days=30))
     limit = request.GET.get('limit', 10)
 
     try:
         limit = int(limit)
+        if limit <= 0: raise ValueError
     except (ValueError, TypeError):
-        return Response({"error": "limit must be an integer"}, status=status.HTTP_400_BAD_REQUEST)
-
-    if limit <= 0: return Response({"error": "limit must be greater than 0"}, status=status.HTTP_400_BAD_REQUEST)
-
-    if not date_from and not date_to:
-        date_to = timezone.now().date()
-        date_from = date_to - timedelta(days=30)
-    elif not date_from:
-        date_from = '1970-01-01'
-    elif not date_to:
-        date_to = timezone.now().date()
+        return Response({"error": "limit must be a positive integer"}, status=status.HTTP_400_BAD_REQUEST)
 
     query = Event.objects.filter(occurred_at__date__gte=date_from, occurred_at__date__lte=date_to)
     stats = (query.values('event_type').annotate(count=Count('event_type')).order_by('-count')[:limit])
