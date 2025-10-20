@@ -4,6 +4,10 @@ from events_service.models import Event
 from django.core.management.base import BaseCommand
 from django.utils.dateparse import parse_datetime
 from django.db import transaction
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
@@ -12,6 +16,7 @@ class Command(BaseCommand):
         parser.add_argument('csv_file_path', type=str, help='Path to CSV with historic data')
 
     def handle(self, *args, **kwargs):
+        logger.info('CLI. Importing events.')
         csv_file_path = kwargs['csv_file_path']
         imported_count = 0
         skipped_count = 0
@@ -37,8 +42,9 @@ class Command(BaseCommand):
                             self.stdout.write(f'Event {event_id} already exists, skipped')
                             skipped_count += 1
                     except Exception as e:
+                        logger.error(f'CLI. Error importing event {event_id}: {e}')
                         self.stderr.write(f'Error processing row {row}: {e}')
                         error_count += 1
                         continue
-
+        logger.info(f'CLI. Imported {imported_count}, skipped {skipped_count}, with errors: {error_count} events')
         self.stdout.write(self.style.SUCCESS(f'Import finished. Imported {imported_count}, skipped {skipped_count}, with errors: {error_count}'))
