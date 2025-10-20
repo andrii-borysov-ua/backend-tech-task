@@ -23,6 +23,9 @@ env = environ.Env(
 
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
+RATE_LIMIT_RATE = int(os.environ.get('RATE_LIMIT_RATE', 100))
+RATE_LIMIT_CAPACITY = int(os.environ.get('RATE_LIMIT_CAPACITY', 100))
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
@@ -59,6 +62,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'backend.middleware.request_logging.RequestLoggingMiddleware',
     'backend.middleware.event_logging.EventLoadMiddleware',
+    'backend.middleware.rate_limiter.RateLimitMiddleware',
 ]
 
 ROOT_URLCONF = 'backend.urls'
@@ -169,4 +173,8 @@ LOGGING = {
             'propagate': False,
         },
     },
+}
+
+REST_FRAMEWORK = {
+    "EXCEPTION_HANDLER": "event_service.utils.custom_exception_handler.custom_exception_handler"
 }
