@@ -3,6 +3,7 @@ from datetime import timedelta
 from django.urls import reverse
 from django.utils import timezone
 from events_service.models import Event
+from django.test import override_settings
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -11,16 +12,17 @@ class EventIngestTests(APITestCase):
     def setUp(self):
         self.url_import = reverse('ingest_events')
 
+    @override_settings(CELERY_TASK_ALWAYS_EAGER=True, CELERY_TASK_EAGER_PROPAGATES=True)
     def test_create_event(self):
         data = [{
             "event_id": str(uuid.uuid4()),
             "occurred_at": timezone.now().isoformat(),
             "user_id": 1,
             "event_type": "login",
-            "properties": {"country": "PL"}
+            "properties": {"country": "PL", "session_id": "5ef18783"}
         }, ]
         response = self.client.post(self.url_import, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
         self.assertEqual(Event.objects.count(), 1)
         self.assertEqual(Event.objects.get().user_id, 1)
 
@@ -33,14 +35,25 @@ class EventIngestTests(APITestCase):
             "properties": {"country": "UK", "session_id": "587e644d", "method": "apple"}
         }, ]
         response1 = self.client.post(self.url_import, data, format='json')
-        self.assertEqual(response1.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response1.status_code, status.HTTP_202_ACCEPTED)
         count_after_first = Event.objects.count()
-
         response2 = self.client.post(self.url_import, data, format='json')
-        self.assertEqual(response2.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response2.status_code, status.HTTP_202_ACCEPTED)
         count_after_second = Event.objects.count()
-
         self.assertEqual(count_after_first, count_after_second)
+
+    def test_create_event_negative(self):
+        data = [{
+            "event_id": str(uuid.uuid4()),
+            "occurred_at": timezone.now().isoformat(),
+            "user_id": 1,
+            "event_type": "login",
+            "properties": {"country": "PL"}
+        }, ]
+        response = self.client.post(self.url_import, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Event.objects.count(), 0)
+        self.assertEqual(Event.objects.count(), 0)
 
 
 class DAUStatsTests(APITestCase):
@@ -99,6 +112,7 @@ class IngestToStatsIntegrationTest(APITestCase):
         self.url_import = reverse('ingest_events')
         self.url_dau = reverse('dau_stats')
 
+    @override_settings(CELERY_TASK_ALWAYS_EAGER=True, CELERY_TASK_EAGER_PROPAGATES=True)
     def test_ingest_and_query_stats(self):
         event_id = str(uuid.uuid4())
         event_data = [{
@@ -106,10 +120,10 @@ class IngestToStatsIntegrationTest(APITestCase):
             "occurred_at": (timezone.now() - timedelta(days=1)).isoformat(),
             "user_id": 1,
             "event_type": "view_item",
-            "properties": {"item_id": "SKU123"}
+            "properties": {"item_id": "SKU123", "country": "PL", "session_id": "7ef43223"}
         }, ]
         resp_import = self.client.post(self.url_import, event_data, format='json')
-        self.assertEqual(resp_import.status_code, 201)
+        self.assertEqual(resp_import.status_code, 202)
         resp_stats = self.client.get(self.url_dau, query_params={'from': (timezone.now() - timedelta(days=2)).date(), 'to': timezone.now().date()})
         self.assertEqual(resp_stats.status_code, 200)
         stats_data = resp_stats.json()

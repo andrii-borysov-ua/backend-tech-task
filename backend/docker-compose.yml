@@ -15,12 +15,20 @@ services:
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - .:/app
+      - ./logs:/app/logs
     ports:
       - "8000:8000"
     depends_on:
       - db
     environment:
       DATABASE_URL: postgres://postgres:password@db:5432/events_db
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"       # for Celery
+      - "15672:15672"     # Web UI RabbitMQ
+    restart: always
 
 volumes:
   postgres_data:

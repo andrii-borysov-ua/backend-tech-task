@@ -25,6 +25,11 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 RATE_LIMIT_RATE = int(os.environ.get('RATE_LIMIT_RATE', 100))
 RATE_LIMIT_CAPACITY = int(os.environ.get('RATE_LIMIT_CAPACITY', 100))
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'amqp://guest:guest@rabbitmq:5672//')
+CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'rpc://')
+CELERY_ACCEPT_CONTENT = [os.environ.get('CELERY_ACCEPT_CONTENT', 'json')]
+CELERY_TASK_SERIALIZER = os.environ.get('CELERY_TASK_SERIALIZER', 'json')
+CELERY_RESULT_SERIALIZER = os.environ.get('CELERY_RESULT_SERIALIZER', 'json')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/

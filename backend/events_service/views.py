@@ -8,6 +8,7 @@ from django.utils import timezone
 from django.utils.dateparse import parse_date
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
+from events_service.tasks import process_event_batch
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
@@ -25,25 +26,15 @@ logger = logging.getLogger(__name__)
 def ingest_events(request):
     logger.info('Ingest events')
     if not isinstance(request.data, list):
-        logger.debug(request.data)
-        logger.error('Ingest events request body is not a list')
         return Response({"error": "Expected a list of events"}, status=status.HTTP_400_BAD_REQUEST)
-    created_count = 0
-    skipped_count = 0
-    with transaction.atomic():
-        for event_data in request.data:
-            serializer = EventSerializer(data=event_data)
-            if serializer.is_valid():
-                event, created = Event.objects.get_or_create(event_id=serializer.validated_data['event_id'], defaults=serializer.validated_data)
-                if created:
-                    created_count += 1
-                else:
-                    skipped_count += 1
-            else:
-                logger.error(serializer.errors)
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    logger.info(f'processed: {len(request.data)}, created: {created_count}, skipped: {skipped_count}')
-    return Response({"processed": len(request.data), "created": created_count, "skipped": skipped_count}, status=status.HTTP_201_CREATED)
+    valid_events = []
+    for event_data in request.data:
+        serializer = EventSerializer(data=event_data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        valid_events.append(serializer.validated_data)
+    process_event_batch.delay(valid_events)
+    return Response({"queued": len(valid_events)}, status=status.HTTP_202_ACCEPTED)
 
 
 from_param = openapi.Parameter('from', openapi.IN_QUERY, description="Start date (YYYY-MM-DD)",
