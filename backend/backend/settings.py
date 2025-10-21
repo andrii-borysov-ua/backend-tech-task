@@ -9,20 +9,17 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
+
+import environ
 import dj_database_url
 import os
-import environ
-from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 # BASE_DIR = Path(__file__).resolve().parent.parent
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-env = environ.Env(
-    DEBUG=(bool, False)
-)
-
+env = environ.Env(DEBUG=(bool, False))
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
-
+ACCESS_API_KEY= os.environ.get('ACCESS_API_KEY')
 RATE_LIMIT_RATE = int(os.environ.get('RATE_LIMIT_RATE', 100))
 RATE_LIMIT_CAPACITY = int(os.environ.get('RATE_LIMIT_CAPACITY', 100))
 CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'amqp://guest:guest@rabbitmq:5672//')
@@ -181,5 +178,7 @@ LOGGING = {
 }
 
 REST_FRAMEWORK = {
-    "EXCEPTION_HANDLER": "event_service.utils.custom_exception_handler.custom_exception_handler"
+    'EXCEPTION_HANDLER': 'events_service.utils.custom_exception_handler.custom_exception_handler',
+    'DEFAULT_AUTHENTICATION_CLASSES': ['backend.middleware.api_key_auth.APIKeyAuthentication'],
+    'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.AllowAny'],
 }

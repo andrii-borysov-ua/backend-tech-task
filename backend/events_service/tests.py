@@ -1,5 +1,6 @@
 import uuid
 from datetime import timedelta
+from django.conf import settings
 from django.urls import reverse
 from django.utils import timezone
 from events_service.models import Event
@@ -10,6 +11,7 @@ from rest_framework.test import APITestCase
 
 class EventIngestTests(APITestCase):
     def setUp(self):
+        self.client.credentials(HTTP_X_API_KEY=settings.ACCESS_API_KEY)
         self.url_import = reverse('ingest_events')
 
     @override_settings(CELERY_TASK_ALWAYS_EAGER=True, CELERY_TASK_EAGER_PROPAGATES=True)
@@ -58,6 +60,7 @@ class EventIngestTests(APITestCase):
 
 class DAUStatsTests(APITestCase):
     def setUp(self):
+        self.client.credentials(HTTP_X_API_KEY=settings.ACCESS_API_KEY)
         now = timezone.now()
         Event.objects.create(event_id=str(uuid.uuid4()), occurred_at=now, user_id=1, event_type="view",
                              properties={"country": "PL", "session_id": "5ef18783", "item_id": "SKU6991", "price": 118.64, "currency": "USD"})
@@ -75,6 +78,7 @@ class DAUStatsTests(APITestCase):
 
 class TopEventsTests(APITestCase):
     def setUp(self):
+        self.client.credentials(HTTP_X_API_KEY=settings.ACCESS_API_KEY)
         now = timezone.now()
         for i in range(5):
             Event.objects.create(event_id=str(uuid.uuid4()), occurred_at=now, user_id=i, event_type="login", properties={})
@@ -91,6 +95,7 @@ class TopEventsTests(APITestCase):
 
 class RetentionStatsTests(APITestCase):
     def setUp(self):
+        self.client.credentials(HTTP_X_API_KEY=settings.ACCESS_API_KEY)
         base = timezone.now() - timedelta(days=7)
         Event.objects.create(event_id=str(uuid.uuid4()), occurred_at=base, user_id=11, event_type="login",
                              properties={"country": "UK", "session_id": "534e624f", "method": "google"})
@@ -109,6 +114,7 @@ class RetentionStatsTests(APITestCase):
 
 class IngestToStatsIntegrationTest(APITestCase):
     def setUp(self):
+        self.client.credentials(HTTP_X_API_KEY=settings.ACCESS_API_KEY)
         self.url_import = reverse('ingest_events')
         self.url_dau = reverse('dau_stats')
 

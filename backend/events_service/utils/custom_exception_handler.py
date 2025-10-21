@@ -15,4 +15,4 @@ def custom_exception_handler(exc, context):
     if response.status_code == 400:
         logger.warning(f"Validation error: {response.data} in view {context.get('view')}")
         _response = Response({"error": response.data}, status=response.status_code)
-    return _response
+    return None
