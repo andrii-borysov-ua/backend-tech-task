@@ -1,6 +1,5 @@
 from celery import shared_task
 from .models import Event
-from .serializers import EventSerializer
 from django.db import transaction
 import logging
 
